@@ -233,37 +233,45 @@
 
 
     function exportToExcel() {
-      const headers = [
-        "Identificador","Tipo de OS","Documento do cliente","Nome do cliente",
-        "Nome da localização","Número de série","Nome do colaborador",
-        "Nomes dos colaboradores secundários","Data de agendamento","Hora de agendamento",
-        "Descrição","Descrição da tarefa","Etiquetas"
-      ];
+  const headers = [
+    "Identificador","Tipo de OS","Documento do cliente","Nome do cliente",
+    "Nome da localização","Número de série","Nome do colaborador",
+    "Nomes dos colaboradores secundarios","Data de agendamento","Hora de agendamento",
+    "Descrição","Descrição da tarefa","Etiquetas"
+  ];
 
-      const tbody = document.getElementById('formBody');
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      const aoa = [headers];
+  const tbody = document.getElementById('formBody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const aoa = [headers];
 
-      rows.forEach(tr => {
-        const tds = Array.from(tr.children);
-        const rowVals = tds.map(td => {
-          const input = td.querySelector('input');
-          const select = td.querySelector('select');
-          const textarea = td.querySelector('textarea');
+  rows.forEach(tr => {
+    const tds = Array.from(tr.children);
+    const rowVals = tds.map(td => {
+      const input = td.querySelector('input, select, textarea');
 
-          if (input) return input.value || "";
-          if (select) return select.options[select.selectedIndex]?.text || "";
-          if (textarea) return textarea.value || "";
-          return td.textContent.trim();
-        });
-        aoa.push(rowVals);
-      });
+      if (!input) return "";
+      if (input.tagName === "SELECT") return input.options[input.selectedIndex]?.text || "";
+      return input.value || "";
+    });
+    aoa.push(rowVals);
+  });
 
-      const ws = XLSX.utils.aoa_to_sheet(aoa);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "OS");
-      XLSX.writeFile(wb, "ordens_servico.xlsx");
-    }
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Auto dimensionar colunas
+  ws['!cols'] = headers.map((header, i) => {
+    const maxLength = aoa.reduce((max, row) => {
+      const val = String(row[i] || "");
+      return Math.max(max, val.length);
+    }, header.length);
+    return { wch: maxLength + 2 };
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "ordens");
+  XLSX.writeFile(wb, "ordens_servico.xlsx");
+}
+
 
     window.addEventListener('DOMContentLoaded', () => {
       loadXlsxIntoDatalist('localizacoes.xlsx', 'Planilha1', 0, 'localizacoes');
