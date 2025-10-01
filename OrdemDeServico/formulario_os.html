@@ -8,9 +8,10 @@
     body{font-family:Arial,sans-serif;padding:20px;background:#f4f4f4}
     h2{text-align:center}
     table{width:100%;border-collapse:collapse;background:#fff;margin-bottom:20px}
-    th,td{border:1px solid #ccc;padding:6px}
+    th,td{border:1px solid #ccc;padding:6px;vertical-align:top}
     th{background:#eaeaea}
-    input,select{width:100%;box-sizing:border-box;border:none;padding:6px}
+    input,select,textarea{width:100%;box-sizing:border-box;border:none;padding:6px;font-family:inherit}
+    textarea{resize:vertical}
     button{padding:10px 20px;margin-right:10px;cursor:pointer}
     .actions{display:flex;gap:12px;flex-wrap:wrap}
   </style>
@@ -56,7 +57,7 @@
         <td><input type="text" /></td>
         <td><input type="date" /></td>
         <td><input type="time" /></td>
-        <td><input type="text" /></td>
+        <td><textarea rows="2" style="resize: vertical;"></textarea></td>
         <td><input type="text" /></td>
         <td><input type="text" /></td>
       </tr>
@@ -73,7 +74,6 @@
   </div>
 
   <script>
-    // Utilitário para carregar uma coluna (A=0) de um .xlsx em um datalist
     async function loadXlsxIntoDatalist(fileName, sheetName, colIndex, datalistId) {
       try {
         const res = await fetch(fileName);
@@ -81,31 +81,27 @@
         const buffer = await res.arrayBuffer();
         const wb = XLSX.read(buffer, { type: 'array' });
         const sheet = wb.Sheets[sheetName];
-        if (!sheet) throw new Error(`Aba "${sheetName}" não encontrada em ${fileName}`);
         const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
         const list = document.getElementById(datalistId);
         const seen = new Set();
 
         data.forEach((row, i) => {
-          const v = row[colIndex];
-          if (v === undefined || v === null) return;
-          const val = String(v).trim();
-          // Se a primeira célula for um cabeçalho "Nome", ignore apenas esse caso
+          const val = String(row[colIndex] || "").trim();
           if (i === 0 && val.toLowerCase() === 'nome') return;
-          if (!val || seen.has(val)) return;
-          seen.add(val);
-          const opt = document.createElement('option');
-          opt.value = val;
-          list.appendChild(opt);
+          if (val && !seen.has(val)) {
+            seen.add(val);
+            const opt = document.createElement('option');
+            opt.value = val;
+            list.appendChild(opt);
+          }
         });
       } catch (err) {
         console.error(err);
-        alert(`Não foi possível carregar "${fileName}".\nDica: abra este HTML via servidor (ex.: python -m http.server).`);
+        alert(`Erro ao carregar "${fileName}".\nAbra via servidor local para funcionar corretamente.`);
       }
     }
 
-    // Carrega listas ao iniciar
     window.addEventListener('DOMContentLoaded', () => {
       loadXlsxIntoDatalist('localizacoes.xlsx', 'Planilha1', 0, 'localizacoes');
       loadXlsxIntoDatalist('colaboradores.xlsx', 'Planilha1', 0, 'colaboradores');
@@ -119,35 +115,32 @@
         const cell = document.createElement("td");
 
         if (i === 1) {
-          // Tipo de OS (select)
           const select = document.createElement("select");
           const option = document.createElement("option");
           option.value = "OXXO - Sustentação";
           option.text = "OXXO - Sustentação";
           select.appendChild(option);
           cell.appendChild(select);
-
         } else if (i === 3) {
-          // Nome do cliente (select)
           const select = document.createElement("select");
           const option = document.createElement("option");
           option.value = "OXXO";
           option.text = "OXXO";
           select.appendChild(option);
           cell.appendChild(select);
-
         } else if (i === 4) {
-          // Nome da localização (datalist)
           const input = document.createElement("input");
           input.setAttribute("list", "localizacoes");
           cell.appendChild(input);
-
         } else if (i === 6) {
-          // Nome do colaborador (datalist)
           const input = document.createElement("input");
           input.setAttribute("list", "colaboradores");
           cell.appendChild(input);
-
+        } else if (i === 10) {
+          const textarea = document.createElement("textarea");
+          textarea.rows = 2;
+          textarea.style.resize = "vertical";
+          cell.appendChild(textarea);
         } else {
           const input = document.createElement("input");
           input.type = (i === 8) ? "date" : (i === 9 ? "time" : "text");
@@ -160,7 +153,6 @@
       tbody.appendChild(row);
     }
 
-    // Exportação robusta: lê valores de inputs e selects (sem depender do innerText)
     function exportToExcel() {
       const headers = [
         "Identificador","Tipo de OS","Documento do cliente","Nome do cliente",
@@ -176,16 +168,14 @@
       rows.forEach(tr => {
         const tds = Array.from(tr.children);
         const rowVals = tds.map(td => {
-          const inp = td.querySelector('input');
-          const sel = td.querySelector('select');
+          const input = td.querySelector('input');
+          const select = td.querySelector('select');
+          const textarea = td.querySelector('textarea');
 
-          if (inp) {
-            return inp.value || "";
-          } else if (sel) {
-            return sel.options[sel.selectedIndex]?.text || "";
-          } else {
-            return td.textContent.trim();
-          }
+          if (input) return input.value || "";
+          if (select) return select.options[select.selectedIndex]?.text || "";
+          if (textarea) return textarea.value || "";
+          return td.textContent.trim();
         });
         aoa.push(rowVals);
       });
