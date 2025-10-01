@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cadastro de OS</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body{font-family:Arial,sans-serif;padding:20px;background:#f4f4f4}
+    h2{text-align:center}
+    table{width:100%;border-collapse:collapse;background:#fff;margin-bottom:20px}
+    th,td{border:1px solid #ccc;padding:6px}
+    th{background:#eaeaea}
+    input,select{width:100%;box-sizing:border-box;border:none;padding:6px}
+    button{padding:10px 20px;margin-right:10px;cursor:pointer}
+    .actions{display:flex;gap:12px;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <h2>Formulário de Cadastro de OS</h2>
+
+  <table id="osTable">
+    <thead>
+      <tr>
+        <th>Identificador</th>
+        <th>Tipo de OS</th>
+        <th>Documento do cliente</th>
+        <th>Nome do cliente</th>
+        <th>Nome da localização</th>
+        <th>Número de série</th>
+        <th>Nome do colaborador</th>
+        <th>Nomes dos colaboradores secundários</th>
+        <th>Data de agendamento</th>
+        <th>Hora de agendamento</th>
+        <th>Descrição</th>
+        <th>Descrição da tarefa</th>
+        <th>Etiquetas</th>
+      </tr>
+    </thead>
+    <tbody id="formBody">
+      <tr>
+        <td><input type="text" /></td>
+        <td>
+          <select>
+            <option value="OXXO - Sustentação">OXXO - Sustentação</option>
+          </select>
+        </td>
+        <td><input type="text" /></td>
+        <td>
+          <select>
+            <option value="OXXO">OXXO</option>
+          </select>
+        </td>
+        <td><input list="localizacoes" /></td>
+        <td><input type="text" /></td>
+        <td><input list="colaboradores" /></td>
+        <td><input type="text" /></td>
+        <td><input type="date" /></td>
+        <td><input type="time" /></td>
+        <td><input type="text" /></td>
+        <td><input type="text" /></td>
+        <td><input type="text" /></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Listas de autocompletar -->
+  <datalist id="localizacoes"></datalist>
+  <datalist id="colaboradores"></datalist>
+
+  <div class="actions">
+    <button onclick="addRow()">Adicionar Linha</button>
+    <button onclick="exportToExcel()">Exportar para Excel</button>
+  </div>
+
+  <script>
+    // Utilitário para carregar uma coluna (A=0) de um .xlsx em um datalist
+    async function loadXlsxIntoDatalist(fileName, sheetName, colIndex, datalistId) {
+      try {
+        const res = await fetch(fileName);
+        if (!res.ok) throw new Error("Falha ao carregar " + fileName);
+        const buffer = await res.arrayBuffer();
+        const wb = XLSX.read(buffer, { type: 'array' });
+        const sheet = wb.Sheets[sheetName];
+        if (!sheet) throw new Error(`Aba "${sheetName}" não encontrada em ${fileName}`);
+        const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        const list = document.getElementById(datalistId);
+        const seen = new Set();
+
+        data.forEach((row, i) => {
+          const v = row[colIndex];
+          if (v === undefined || v === null) return;
+          const val = String(v).trim();
+          // Se a primeira célula for um cabeçalho "Nome", ignore apenas esse caso
+          if (i === 0 && val.toLowerCase() === 'nome') return;
+          if (!val || seen.has(val)) return;
+          seen.add(val);
+          const opt = document.createElement('option');
+          opt.value = val;
+          list.appendChild(opt);
+        });
+      } catch (err) {
+        console.error(err);
+        alert(`Não foi possível carregar "${fileName}".\nDica: abra este HTML via servidor (ex.: python -m http.server).`);
+      }
+    }
+
+    // Carrega listas ao iniciar
+    window.addEventListener('DOMContentLoaded', () => {
+      loadXlsxIntoDatalist('localizacoes.xlsx', 'Planilha1', 0, 'localizacoes');
+      loadXlsxIntoDatalist('colaboradores.xlsx', 'Planilha1', 0, 'colaboradores');
+    });
+
+    function addRow() {
+      const tbody = document.getElementById("formBody");
+      const row = document.createElement("tr");
+
+      for (let i = 0; i < 13; i++) {
+        const cell = document.createElement("td");
+
+        if (i === 1) {
+          // Tipo de OS (select)
+          const select = document.createElement("select");
+          const option = document.createElement("option");
+          option.value = "OXXO - Sustentação";
+          option.text = "OXXO - Sustentação";
+          select.appendChild(option);
+          cell.appendChild(select);
+
+        } else if (i === 3) {
+          // Nome do cliente (select)
+          const select = document.createElement("select");
+          const option = document.createElement("option");
+          option.value = "OXXO";
+          option.text = "OXXO";
+          select.appendChild(option);
+          cell.appendChild(select);
+
+        } else if (i === 4) {
+          // Nome da localização (datalist)
+          const input = document.createElement("input");
+          input.setAttribute("list", "localizacoes");
+          cell.appendChild(input);
+
+        } else if (i === 6) {
+          // Nome do colaborador (datalist)
+          const input = document.createElement("input");
+          input.setAttribute("list", "colaboradores");
+          cell.appendChild(input);
+
+        } else {
+          const input = document.createElement("input");
+          input.type = (i === 8) ? "date" : (i === 9 ? "time" : "text");
+          cell.appendChild(input);
+        }
+
+        row.appendChild(cell);
+      }
+
+      tbody.appendChild(row);
+    }
+
+    // Exportação robusta: lê valores de inputs e selects (sem depender do innerText)
+    function exportToExcel() {
+      const headers = [
+        "Identificador","Tipo de OS","Documento do cliente","Nome do cliente",
+        "Nome da localização","Número de série","Nome do colaborador",
+        "Nomes dos colaboradores secundários","Data de agendamento","Hora de agendamento",
+        "Descrição","Descrição da tarefa","Etiquetas"
+      ];
+
+      const tbody = document.getElementById('formBody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const aoa = [headers];
+
+      rows.forEach(tr => {
+        const tds = Array.from(tr.children);
+        const rowVals = tds.map(td => {
+          const inp = td.querySelector('input');
+          const sel = td.querySelector('select');
+
+          if (inp) {
+            return inp.value || "";
+          } else if (sel) {
+            return sel.options[sel.selectedIndex]?.text || "";
+          } else {
+            return td.textContent.trim();
+          }
+        });
+        aoa.push(rowVals);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "OS");
+      XLSX.writeFile(wb, "ordens_servico.xlsx");
+    }
+  </script>
+</body>
+</html>
