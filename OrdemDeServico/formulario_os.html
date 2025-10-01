@@ -236,7 +236,7 @@
   const headers = [
     "Identificador","Tipo de OS","Documento do cliente","Nome do cliente",
     "Nome da localização","Número de série","Nome do colaborador",
-    "Nomes dos colaboradores secundarios","Data de agendamento","Hora de agendamento",
+    "Nomes dos colaboradores secundários","Data de agendamento","Hora de agendamento",
     "Descrição","Descrição da tarefa","Etiquetas"
   ];
 
@@ -250,15 +250,25 @@
       const input = td.querySelector('input, select, textarea');
 
       if (!input) return "";
-      if (input.tagName === "SELECT") return input.options[input.selectedIndex]?.text || "";
-      return input.value || "";
+
+      let val = input.value || "";
+
+      // Converte data do formato yyyy-mm-dd para dd/mm/yyyy
+      if (input.type === "date" && val) {
+        const [y, m, d] = val.split("-");
+        val = `${d}/${m}/${y}`;
+      }
+
+      return input.tagName === "SELECT"
+        ? input.options[input.selectedIndex]?.text || ""
+        : val;
     });
     aoa.push(rowVals);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-  // Auto dimensionar colunas
+  // Ajusta largura automática das colunas
   ws['!cols'] = headers.map((header, i) => {
     const maxLength = aoa.reduce((max, row) => {
       const val = String(row[i] || "");
@@ -268,9 +278,10 @@
   });
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "ordens");
+  XLSX.utils.book_append_sheet(wb, ws, "OS");
   XLSX.writeFile(wb, "ordens_servico.xlsx");
 }
+
 
 
     window.addEventListener('DOMContentLoaded', () => {
