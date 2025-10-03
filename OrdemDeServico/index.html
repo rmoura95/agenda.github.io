@@ -96,23 +96,35 @@
         };
 
         for (const key in datasets) {
-          const { sheet, id, type } = datasets[key];
-          const data = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { header: 1 });
-          const seen = new Set();
-          const el = document.getElementById(id);
+  const { sheet, id, type } = datasets[key];
+  const data = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { header: 1 });
+  const seen = new Set();
+  const el = document.getElementById(id) || document.createElement(type === "select" ? "select" : "datalist");
+  el.id = id;
 
-          data.forEach((row, i) => {
-            const val = String(row[0] || "").trim();
-            if (i === 0 && val.toLowerCase() === 'nome') return;
-            if (val && !seen.has(val)) {
-              seen.add(val);
-              const opt = document.createElement("option");
-              opt.value = val;
-              if (type === "select") opt.textContent = val;
-              el.appendChild(opt);
-            }
-          });
-        }
+  // Adiciona uma opção vazia padrão se for um select
+  if (type === "select") {
+    const defaultOpt = document.createElement("option");
+    defaultOpt.value = "";
+    defaultOpt.textContent = "Selecione...";
+    el.appendChild(defaultOpt);
+  }
+
+  data.forEach((row, i) => {
+    const val = String(row[0] || "").trim();
+    if (i === 0 && val.toLowerCase() === 'nome') return;
+    if (val && !seen.has(val)) {
+      seen.add(val);
+      const opt = document.createElement("option");
+      opt.value = val;
+      if (type === "select") opt.textContent = val;
+      el.appendChild(opt);
+    }
+  });
+
+  if (!document.getElementById(id)) document.body.appendChild(el);
+}
+
 
         // Localizações por cliente (col A = OXXO, col B = DaVita)
         const dataLoc = XLSX.utils.sheet_to_json(wb.Sheets["nome da localização"], { header: 1 });
