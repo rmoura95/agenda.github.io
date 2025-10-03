@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cadastro de OS</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
+    h2 { text-align: center; }
+    .column-selector { margin-bottom: 20px; padding: 10px; background: #fff; border: 1px solid #ccc; }
+    .column-selector label { margin-right: 12px; display: inline-block; }
+    table { width: 100%; border-collapse: collapse; background: #fff; margin-bottom: 20px; table-layout: fixed; }
+    th, td { border: 1px solid #ccc; padding: 6px; vertical-align: top; overflow: hidden; }
+    th { background: #eaeaea; position: relative; }
+    input, select, textarea {
+      width: 100%; box-sizing: border-box; border: none; padding: 6px; font-family: inherit;
+    }
+    textarea { resize: vertical; }
+    button { padding: 10px 20px; margin-right: 10px; cursor: pointer; }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .resizer {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 5px;
+      height: 100%;
+      cursor: col-resize;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>Formulário de Cadastro de OS</h2>
+
+  <div class="column-selector" id="columnSelector"></div>
+
+  <table id="osTable">
+    <thead>
+      <tr id="headerRow">
+        <th>Identificador</th>
+        <th>Tipo de OS</th>
+        <th>Documento do cliente</th>
+        <th>Nome do cliente</th>
+        <th>Nome da localização</th>
+        <th>Número de série</th>
+        <th>Nome do colaborador</th>
+        <th>Nomes dos colaboradores secundários</th>
+        <th>Data de agendamento</th>
+        <th>Hora de agendamento</th>
+        <th>Descrição</th>
+        <th>Descrição da tarefa</th>
+        <th>Etiquetas</th>
+      </tr>
+    </thead>
+    <tbody id="formBody">
+      <tr>
+        <td><input type="text" /></td>
+        <td><select id="tipo-os-options"></select></td>
+        <td><input type="text" /></td>
+        <td><select id="nome-cliente-options" onchange="updateLocalizacoesDatalist(this.value)"></select></td>
+        <td><input list="localizacoes" /></td>
+        <td><input type="text" /></td>
+        <td><input list="colaboradores" /></td>
+        <td><input type="text" /></td>
+        <td><input type="date" /></td>
+        <td><input type="time" /></td>
+        <td><textarea rows="2"></textarea></td>
+        <td><input type="text" /></td>
+        <td><input type="text" /></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <datalist id="localizacoes"></datalist>
+  <datalist id="colaboradores"></datalist>
+
+  <div class="actions">
+    <button onclick="addRow()">Adicionar Linha</button>
+    <button onclick="exportToExcel()">Exportar para Excel</button>
+  </div>
+
+  <script>
+    const localizacoesMap = { OXXO: [], DaVita: [] };
+
+    async function loadAllFromWorkbook(fileName) {
+      try {
+        const res = await fetch(fileName);
+        if (!res.ok) throw new Error("Erro ao carregar arquivo: " + fileName);
+        const buffer = await res.arrayBuffer();
+        const wb = XLSX.read(buffer, { type: 'array' });
+
+        const datasets = {
+          tipoOS: { sheet: "tipo de OS", id: "tipo-os-options", type: "select" },
+          nomeCliente: { sheet: "nome do cliente", id: "nome-cliente-options", type: "select" },
+          colaboradores: { sheet: "nome do colaborador", id: "colaboradores", type: "datalist" }
+        };
+
+        for (const key in datasets) {
+          const { sheet, id, type } = datasets[key];
+          const data = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { header: 1 });
+          const seen = new Set();
+          const el = document.getElementById(id);
+
+          data.forEach((row, i) => {
+            const val = String(row[0] || "").trim();
+            if (i === 0 && val.toLowerCase() === 'nome') return;
+            if (val && !seen.has(val)) {
+              seen.add(val);
+              const opt = document.createElement("option");
+              opt.value = val;
+              if (type === "select") opt.textContent = val;
+              el.appendChild(opt);
+            }
+          });
+        }
+
+        // Localizações por cliente (col A = OXXO, col B = DaVita)
+        const dataLoc = XLSX.utils.sheet_to_json(wb.Sheets["nome da localização"], { header: 1 });
+        dataLoc.forEach((row, i) => {
+          if (i === 0) return;
+          const colA = String(row[0] || "").trim();
+          const colB = String(row[1] || "").trim();
+          if (colA) localizacoesMap.OXXO.push(colA);
+          if (colB) localizacoesMap.DaVita.push(colB);
+        });
+
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao carregar dados do Excel. Use um servidor local.");
+      }
+    }
+
+    function updateLocalizacoesDatalist(clienteSelecionado) {
+      const datalist = document.getElementById("localizacoes");
+      datalist.innerHTML = "";
+      const opcoes = localizacoesMap[clienteSelecionado] || [];
+      opcoes.forEach(val => {
+        const opt = document.createElement("option");
+        opt.value = val;
+        datalist.appendChild(opt);
+      });
+    }
+
+    function createSelectFromDatalist(datalistId) {
+      const datalist = document.getElementById(datalistId);
+      const select = document.createElement("select");
+      Array.from(datalist.options).forEach(opt => {
+        const option = document.createElement("option");
+        option.value = opt.value;
+        option.textContent = opt.value;
+        select.appendChild(option);
+      });
+      return select;
+    }
+
+    function addRow() {
+      const tbody = document.getElementById("formBody");
+      const row = document.createElement("tr");
+
+      const columnVisibility = [];
+      document.querySelectorAll("#columnSelector input[type=checkbox]")
+        .forEach(cb => columnVisibility.push(cb.checked));
+
+      for (let i = 0; i < 13; i++) {
+        const cell = document.createElement("td");
+        if (!columnVisibility[i]) cell.style.display = "none";
+
+        let element;
+        switch (i) {
+          case 1:
+            element = createSelectFromDatalist("tipo-os-options"); break;
+          case 3:
+            element = createSelectFromDatalist("nome-cliente-options");
+            element.addEventListener("change", () => updateLocalizacoesDatalist(element.value));
+            break;
+          case 4:
+            element = document.createElement("input");
+            element.setAttribute("list", "localizacoes"); break;
+          case 6:
+            element = document.createElement("input");
+            element.setAttribute("list", "colaboradores"); break;
+          case 10:
+            element = document.createElement("textarea");
+            element.rows = 2;
+            element.style.resize = "vertical"; break;
+          default:
+            element = document.createElement("input");
+            element.type = (i === 8) ? "date" : (i === 9 ? "time" : "text"); break;
+        }
+
+        cell.appendChild(element);
+        row.appendChild(cell);
+      }
+
+      tbody.appendChild(row);
+    }
+
+    function exportToExcel() {
+      const headers = [
+        "Identificador","Tipo de OS","Documento do cliente","Nome do cliente",
+        "Nome da localização","Número de série","Nome do colaborador",
+        "Nomes dos colaboradores secundarios","Data de agendamento","Hora de agendamento",
+        "Descrição","Descrição da tarefa","Etiquetas"];
+
+      const tbody = document.getElementById("formBody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      const aoa = [headers];
+
+      rows.forEach(tr => {
+        const tds = Array.from(tr.children);
+        const rowVals = tds.map(td => {
+          const input = td.querySelector('input, select, textarea');
+          if (!input) return "";
+          let val = input.value || "";
+          if (input.type === "date" && val) {
+            const [y, m, d] = val.split("-");
+            val = `${d}/${m}/${y}`;
+          }
+          return input.tagName === "SELECT"
+            ? input.options[input.selectedIndex]?.text || ""
+            : val;
+        });
+        aoa.push(rowVals);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = headers.map((header, i) => {
+        const maxLength = aoa.reduce((max, row) => {
+          const val = String(row[i] || "");
+          return Math.max(max, val.length);
+        }, header.length);
+        return { wch: maxLength + 2 };
+      });
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "ordens");
+      XLSX.writeFile(wb, "ordens_servico.xlsx");
+    }
+
+    function makeResizable() {
+      const cols = document.querySelectorAll("th");
+      cols.forEach((th) => {
+        const resizer = document.createElement("div");
+        resizer.className = "resizer";
+        th.appendChild(resizer);
+        resizer.addEventListener("mousedown", (e) => {
+          const startX = e.clientX;
+          const startWidth = th.offsetWidth;
+          function resize(e) {
+            th.style.width = startWidth + (e.clientX - startX) + "px";
+          }
+          function stopResize() {
+            window.removeEventListener("mousemove", resize);
+            window.removeEventListener("mouseup", stopResize);
+          }
+          window.addEventListener("mousemove", resize);
+          window.addEventListener("mouseup", stopResize);
+        });
+      });
+    }
+
+    function createColumnSelector() {
+      const headerRow = document.getElementById("headerRow");
+      const headers = headerRow.querySelectorAll("th");
+      const columnSelector = document.getElementById("columnSelector");
+
+      headers.forEach((th, index) => {
+        const label = document.createElement("label");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.dataset.index = index;
+        checkbox.onchange = toggleColumnVisibility;
+
+        const savedPrefs = JSON.parse(localStorage.getItem("columnVisibility") || "{}");
+        checkbox.checked = savedPrefs[index] !== false;
+
+        label.appendChild(checkbox);
+        label.append(" " + th.textContent);
+        columnSelector.appendChild(label);
+
+        toggleColumnDisplay(index, checkbox.checked);
+      });
+    }
+
+    function toggleColumnVisibility(event) {
+      const index = event.target.dataset.index;
+      const show = event.target.checked;
+      const prefs = JSON.parse(localStorage.getItem("columnVisibility") || "{}");
+      prefs[index] = show;
+      localStorage.setItem("columnVisibility", JSON.stringify(prefs));
+      toggleColumnDisplay(index, show);
+    }
+
+    function toggleColumnDisplay(index, show) {
+      const table = document.getElementById("osTable");
+      Array.from(table.rows).forEach(row => {
+        const cell = row.cells[index];
+        if (cell) cell.style.display = show ? "" : "none";
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadAllFromWorkbook('dados_os.xlsx');
+      makeResizable();
+      createColumnSelector();
+    });
+  </script>
+</body>
+</html>
