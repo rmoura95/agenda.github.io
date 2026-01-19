@@ -2,7 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Cadastro de OS</title>
+  <title>GERADOR DE O.S. EM LOTE</title>
+  <link rel="icon" type="image/x-icon" href="https://sistemascorporativos.stefanini.com/favicon.ico">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
@@ -80,7 +81,7 @@
   </div>
 
   <script>
-    const localizacoesMap = { OXXO: [], DaVita: [] };
+    const localizacoesMap = { OXXO: [], DaVita: [], RAIZEN: [] };
 
     async function loadAllFromWorkbook(fileName) {
       try {
@@ -132,8 +133,10 @@
           if (i === 0) return;
           const colA = String(row[0] || "").trim();
           const colB = String(row[1] || "").trim();
+		  const colC = String(row[2] || "").trim();
           if (colA) localizacoesMap.OXXO.push(colA);
           if (colB) localizacoesMap.DaVita.push(colB);
+		  if (colC) localizacoesMap.RAIZEN.push(colC);
         });
 
       } catch (err) {
@@ -317,5 +320,6 @@
       createColumnSelector();
     });
   </script>
+  
 </body>
 </html>
