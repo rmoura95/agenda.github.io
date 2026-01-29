@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rainha dos Gelados</title>
+
+  <style>
+    :root{
+      /* TONS DE ROSA (LOGO) */
+      --rosa:#e84c8b;
+      --rosa-esc:#c93672;
+      --rosa-claro:#f8b3cc;
+
+      --texto:#3b1b27;
+      --card-bg:rgba(255,255,255,.72);
+      --shadow:0 20px 50px rgba(0,0,0,.15);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+
+    body{
+      margin:0;
+      font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--texto);
+      display:grid;
+      place-items:center;
+      background:
+        radial-gradient(900px 500px at 12% 18%, rgba(232,76,139,.35), transparent 60%),
+        radial-gradient(700px 420px at 90% 22%, rgba(248,179,204,.45), transparent 55%),
+        radial-gradient(650px 450px at 80% 85%, rgba(201,54,114,.30), transparent 55%),
+        linear-gradient(180deg, #fff0f6 0%, #fde6ef 100%);
+      overflow:hidden;
+    }
+
+    /* blobs decorativos */
+    .blob{
+      position:fixed;
+      filter:blur(30px);
+      opacity:.25;
+      z-index:0;
+      border-radius:50%;
+      animation:float 18s ease-in-out infinite;
+    }
+    .b1{width:380px;height:380px;background:var(--rosa);left:-120px;top:-120px;}
+    .b2{width:320px;height:320px;background:var(--rosa-claro);right:-90px;top:60px;animation-delay:4s}
+    .b3{width:360px;height:360px;background:var(--rosa-esc);left:60px;bottom:-120px;animation-delay:8s}
+
+    @keyframes float{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-18px)}
+    }
+
+    .card{
+      position:relative;
+      z-index:1;
+      width:min(92vw, 560px);
+      background:var(--card-bg);
+      backdrop-filter:saturate(160%) blur(10px);
+      -webkit-backdrop-filter:saturate(160%) blur(10px);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:28px 28px 24px;
+      text-align:center;
+      border:1px solid rgba(201,54,114,.18);
+    }
+
+    .brand{
+      display:grid;
+      place-items:center;
+      gap:14px;
+      margin-bottom:14px;
+    }
+
+    .brand img{
+      width:min(56%, 240px);
+      height:auto;
+      display:block;
+    }
+
+    .title{
+      margin:0;
+      font-weight:700;
+      letter-spacing:.2px;
+      font-size:clamp(20px, 2.2vw + 12px, 28px);
+      color:var(--rosa-esc);
+    }
+
+    .subtitle{
+      margin:6px 0 20px;
+      color:#6b3248;
+      font-size:clamp(14px, 1.2vw + 10px, 16px);
+    }
+
+    .cta{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      margin-top:8px;
+      padding:14px 20px;
+      border-radius:999px;
+      text-decoration:none;
+      font-weight:700;
+      font-size:16px;
+      background:linear-gradient(135deg, var(--rosa) 0%, var(--rosa-esc) 100%);
+      color:#fff;
+      box-shadow:0 10px 24px rgba(232,76,139,.35);
+      transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+    }
+
+    .cta:hover{
+      transform:translateY(-2px);
+      box-shadow:0 16px 32px rgba(232,76,139,.45);
+    }
+
+    .cta:active{
+      transform:translateY(0);
+      opacity:.95;
+    }
+
+    .cta svg{
+      width:20px;
+      height:20px;
+      flex:0 0 20px;
+      fill:currentColor;
+    }
+
+    footer{
+      z-index:1;
+      position:fixed;
+      bottom:14px;
+      left:0;
+      right:0;
+      text-align:center;
+      font-size:12px;
+      color:#6b3248;
+      opacity:.9;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- blobs decorativos -->
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+
+  <main class="card">
+    <div class="brand">
+      <img src="logo.jpg" alt="Rainha dos Gelados - Logo">
+    </div>
+
+    <h1 class="title">Fale com a Rainha dos Gelados</h1>
+    <p class="subtitle">Sorvetes • Açai</p>
+
+    <a class="cta" href="https://wa.me/5582993970493" target="_blank" rel="noopener">
+      <!-- ÍCONE WHATSAPP COMPLETO (BALÃO + TELEFONE) -->
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <path d="M19.11 17.56c-.27-.14-1.59-.78-1.84-.87-.25-.09-.43-.14-.61.14-.18.27-.7.87-.86 1.05-.16.18-.32.2-.59.07-.27-.14-1.13-.42-2.15-1.34-.79-.7-1.32-1.57-1.48-1.84-.16-.27-.02-.42.12-.56.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.47-.84-2.01-.22-.53-.45-.46-.61-.46h-.52c-.18 0-.45.07-.68.34-.23.27-.89.87-.89 2.11s.91 2.45 1.04 2.62c.12.18 1.79 2.73 4.33 3.83.6.26 1.07.41 1.43.53.6.19 1.15.16 1.59.1.48-.07 1.59-.65 1.82-1.27.23-.62.23-1.15.16-1.27-.07-.11-.25-.18-.52-.32zM16.02 2.67c-7.36 0-13.33 5.97-13.33 13.33 0 2.35.61 4.64 1.77 6.64L2.67 29.33l6.87-1.79c1.92 1.05 4.07 1.6 6.48 1.6 7.36 0 13.33-5.97 13.33-13.33S23.38 2.67 16.02 2.67zm0 24.4c-2.09 0-4.05-.56-5.76-1.54l-.41-.24-4.08 1.06 1.09-3.97-.27-.42c-1.01-1.66-1.54-3.57-1.54-5.55 0-5.82 4.73-10.55 10.55-10.55S26.57 10.6 26.57 16.42c0 5.82-4.73 10.65-10.55 10.65z"/>
+      </svg>
+      Chamar no WhatsApp
+    </a>
+  </main>
+
+  <footer>© Rainha dos Gelados - CNPJ 49.100.023/0001-67</footer>
+</body>
+</html>
